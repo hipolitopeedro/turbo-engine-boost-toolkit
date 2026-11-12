@@ -3,6 +3,8 @@
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Motorsport](https://img.shields.io/badge/Automotive-Turbo_%26_ECU_Tuning-D9230F?style=for-the-badge)
 
+> **Live Interactive Turbo Sizing & ECU Datalog Simulator (GitHub Pages):** [https://hipolitopeedro.github.io/turbo-engine-boost-toolkit/](https://hipolitopeedro.github.io/turbo-engine-boost-toolkit/)
+>
 > **English:** Automotive engineering hobby project focused on **Turbocharged Engines & Standalone ECU Telemetry (FuelTech / MegaSquirt / Haltech style logs)**. Includes a turbocharger mass airflow & fuel injector sizing calculator (Gasoline vs. Ethanol E100) and an automated ECU datalog safety auditor that detects lean AFR/Lambda under boost, injector duty cycle saturation, heat soak, and overboost events.
 >
 > **Português:** Projeto pessoal de engenharia automotiva focado em **Motores Turbo e Telemetria de Injeções Programáveis (estilo FuelTech / MegaSquirt / Haltech)**. Inclui uma calculadora de dimensionamento de turbina e bicos injetores (Gasolina vs. Etanol E100) e um auditor automatizado de datalogs que detecta mistura pobre sob pressão, saturação de duty cycle de bicos (IDC), *heat soak* de intercooler e *overboost*.

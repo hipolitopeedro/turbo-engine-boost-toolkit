@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Turbocharged Engine Sizing & ECU Datalog Safety Toolkit</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background-color: #0b0e14; color: #e2e8f0; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+    .card { background-color: #141923; border: 1px solid #262f42; border-radius: 0.75rem; }
+  </style>
+</head>
+<body class="min-h-screen pb-16">
+  <header class="border-b border-slate-800 bg-[#0e121a] sticky top-0 z-20">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider bg-orange-600 text-white rounded">Forced Induction & ECU</span>
+          <span class="text-xs text-slate-400 font-mono">Turbo Airflow, Injector Duty Cycle & WOT Datalog Auditor</span>
+        </div>
+        <h1 class="text-xl md:text-2xl font-bold text-white mt-1">Turbocharged Engine Sizing & ECU Datalog Safety Toolkit</h1>
+      </div>
+      <a href="https://github.com/hipolitopeedro/turbo-engine-boost-toolkit" target="_blank" class="px-3 py-1.5 text-xs font-semibold rounded border border-slate-700 hover:bg-slate-800 text-slate-200 transition">
+        Ver Código no GitHub
+      </a>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 mt-6 space-y-8">
+    <!-- Interactive Turbo & Fuel Sizing Calculator -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="card p-5 lg:col-span-5 space-y-4">
+        <div class="border-b border-slate-800 pb-3">
+          <span class="text-xs font-mono text-orange-400 uppercase">Dimensionamento Termodinâmico</span>
+          <h2 class="text-lg font-bold text-white mt-0.5">1. Calculadora de Turbina & Bicos Injetores</h2>
+          <p class="text-xs text-slate-400">Configure os parâmetros do motor para calcular vazão de ar (lb/min), potência estimada e bicos ideais.</p>
+        </div>
+
+        <div class="space-y-3 text-sm">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-slate-400">Cilindrada (Litros)</label>
+              <input type="number" step="0.1" id="dispL" value="2.0" oninput="calcTurbo()" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white font-mono" />
+            </div>
+            <div>
+              <label class="text-xs text-slate-400">Nº de Cilindros</label>
+              <select id="cylinders" onchange="calcTurbo()" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white font-mono">
+                <option value="3">3 Cilindros</option>
+                <option value="4" selected>4 Cilindros</option>
+                <option value="5">5 Cilindros</option>
+                <option value="6">6 Cilindros</option>
+                <option value="8">8 Cilindros (V8)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-slate-400">Pressão de Turbo (bar)</label>
+              <input type="number" step="0.1" id="boostBar" value="1.4" oninput="calcTurbo()" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white font-mono" />
+            </div>
+            <div>
+              <label class="text-xs text-slate-400">RPM de Potência Máx.</label>
+              <input type="number" step="100" id="maxRpm" value="6800" oninput="calcTurbo()" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white font-mono" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-slate-400">Taxa de Compressão Estática</label>
+              <input type="number" step="0.1" id="staticCr" value="9.5" oninput="calcTurbo()" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white font-mono" />
+            </div>
+            <div>
+              <label class="text-xs text-slate-400">Combustível</label>
+              <select id="fuelType" onchange="calcTurbo()" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white font-mono">
+                <option value="ethanol" selected>Etanol (E100 - Brasil)</option>
+                <option value="gasoline">Gasolina Podium / E27</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="card p-5 lg:col-span-7 flex flex-col justify-between space-y-4">
+        <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-mono text-emerald-400 uppercase">Resultados Calculados (IDC Máx. Seguro: 80%)</span>
+            <h2 class="text-lg font-bold text-white mt-0.5">Especificação de Alimentação & Compressor</h2>
+          </div>
+          <span id="crWarningBadge" class="px-2.5 py-1 text-xs font-mono font-bold rounded bg-emerald-500/20 text-emerald-400">Seguro p/ Etanol</span>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div class="bg-[#0d1118] p-3.5 rounded-lg border border-slate-800">
+            <p class="text-xs text-slate-400">Potência Estimada (Motor)</p>
+            <p class="text-2xl font-bold text-orange-400 font-mono mt-1" id="outHp">382 cv</p>
+            <p class="text-xs text-slate-500 font-mono mt-0.5" id="outWhp">~325 whp (Roda)</p>
+          </div>
+          <div class="bg-[#0d1118] p-3.5 rounded-lg border border-slate-800">
+            <p class="text-xs text-slate-400">Fluxo de Ar (Mass Air Flow)</p>
+            <p class="text-2xl font-bold text-sky-400 font-mono mt-1" id="outMaf">36.8 lb/min</p>
+            <p class="text-xs text-slate-500 font-mono mt-0.5" id="outKgh">1,001 kg/h</p>
+          </div>
+          <div class="bg-[#0d1118] p-3.5 rounded-lg border border-slate-800">
+            <p class="text-xs text-slate-400">Pressure Ratio (PR)</p>
+            <p class="text-2xl font-bold text-purple-400 font-mono mt-1" id="outPr">2.46 : 1</p>
+            <p class="text-xs text-slate-500 font-mono mt-0.5" id="outPsi">20.3 PSI Boost</p>
+          </div>
+          <div class="bg-[#0d1118] p-3.5 rounded-lg border border-slate-800">
+            <p class="text-xs text-slate-400">Vazão Mínima por Bico</p>
+            <p class="text-2xl font-bold text-emerald-400 font-mono mt-1" id="outInjCc">890 cc/min</p>
+            <p class="text-xs text-slate-500 font-mono mt-0.5" id="outInjLb">~85 lb/hr (@ 3 bar)</p>
+          </div>
+          <div class="bg-[#0d1118] p-3.5 rounded-lg border border-slate-800">
+            <p class="text-xs text-slate-400">Taxa de Compressão Efetiva</p>
+            <p class="text-2xl font-bold text-amber-400 font-mono mt-1" id="outDynCr">22.6 : 1</p>
+            <p class="text-xs text-slate-500 font-mono mt-0.5">Sob pressão máxima</p>
+          </div>
+          <div class="bg-[#0d1118] p-3.5 rounded-lg border border-slate-800">
+            <p class="text-xs text-slate-400">Bomba de Combustível</p>
+            <p class="text-2xl font-bold text-slate-200 font-mono mt-1" id="outPump">214 L/h</p>
+            <p class="text-xs text-slate-500 font-mono mt-0.5">Vazão mínima na linha</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ECU WOT Datalog Auditor -->
+    <section class="card p-5 space-y-5">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div>
+          <h2 class="text-lg font-bold text-white">2. Auditor de Segurança de Datalog ECU (Puxada WOT 3ª Marcha: 2.500 → 7.000 RPM)</h2>
+          <p class="text-xs text-slate-400">Inspeção automática de mistura (Lambda Real vs. Alvo), Duty Cycle de bicos (IDC %) e temperatura de admissão (IAT)</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="loadDatalogScenario('warning')" id="btnLogWarn" class="px-3 py-1.5 text-xs font-semibold rounded bg-orange-600 text-white">Log c/ Falha de Alimentação em Alta</button>
+          <button onclick="loadDatalogScenario('safe')" id="btnLogSafe" class="px-3 py-1.5 text-xs font-semibold rounded bg-slate-800 text-slate-300 hover:bg-slate-700">Log Acertado (Mapa Corrigido)</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-[#0d1118] p-4 rounded-lg border border-slate-800">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Pressão MAP (bar) & Duty Cycle dos Bicos (IDC %)</h3>
+          <canvas id="boostIdcChart" height="190"></canvas>
+        </div>
+        <div class="bg-[#0d1118] p-4 rounded-lg border border-slate-800">
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Sonda Wideband: Lambda Real vs. Lambda Alvo</h3>
+          <canvas id="lambdaChart" height="190"></canvas>
+        </div>
+      </div>
+
+      <!-- Automated Audit Alerts -->
+      <div class="bg-[#0d1118] p-4 rounded-lg border border-slate-800">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Relatório do Auditor de Datalog</h3>
+        <div id="auditAlerts" class="space-y-2 text-xs font-mono"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const rpms = ['2500', '3000', '3500', '4000', '4500', '5000', '5500', '6000', '6500', '7000'];
+    const scenarios = {
+      warning: {
+        boost: [0.15, 0.45, 0.85, 1.18, 1.22, 1.24, 1.25, 1.28, 1.31, 1.32],
+        idc:   [18,   29,   46,   62,   71,   79,   86,   92,   96,   99],
+        lambdaReal:   [0.92, 0.88, 0.84, 0.80, 0.79, 0.79, 0.81, 0.84, 0.87, 0.89],
+        lambdaTarget: [0.92, 0.88, 0.83, 0.79, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78],
+        alerts: [
+          { type: 'crit', msg: '[CRÍTICO @ 6500-7000 RPM] Saturação de Bico Injetor: IDC atingiu 99.0% (Limite seguro: 85%).' },
+          { type: 'crit', msg: '[CRÍTICO @ 6500-7000 RPM] Mistura Pobre sob Pressão (1.32 bar): Lambda Real 0.89 vs Alvo 0.78 (+0.11 Lean Delta). Risco severo de pré-ignição!' },
+          { type: 'warn', msg: '[ALERTA @ 7000 RPM] Overboost detectado: 1.32 bar (Alvo configurado na Wastegate: 1.20 bar).' }
+        ]
+      },
+      safe: {
+        boost: [0.15, 0.45, 0.85, 1.18, 1.20, 1.20, 1.20, 1.20, 1.20, 1.20],
+        idc:   [14,   22,   35,   48,   54,   60,   65,   70,   74,   77],
+        lambdaReal:   [0.92, 0.88, 0.83, 0.79, 0.78, 0.78, 0.78, 0.78, 0.78, 0.77],
+        lambdaTarget: [0.92, 0.88, 0.83, 0.79, 0.78, 0.78, 0.78, 0.78, 0.78, 0.78],
+        alerts: [
+          { type: 'ok', msg: '[APROVADO] Duty Cycle máximo dos bicos (IDC) em 77.0% @ 7000 RPM — folga de segurança adequada.' },
+          { type: 'ok', msg: '[APROVADO] Curva de Lambda cravada no alvo (0.78 sob 1.20 bar de pressão).' },
+          { type: 'ok', msg: '[APROVADO] Controle de Boost estável em 1.20 bar sem picos de overboost.' }
+        ]
+      }
+    };
+
+    let boostIdcChart, lambdaChart;
+
+    function calcTurbo() {
+      const disp = parseFloat(document.getElementById('dispL').value) || 2.0;
+      const cyl = parseInt(document.getElementById('cylinders').value) || 4;
+      const boostBar = parseFloat(document.getElementById('boostBar').value) || 1.4;
+      const rpm = parseFloat(document.getElementById('maxRpm').value) || 6800;
+      const cr = parseFloat(document.getElementById('staticCr').value) || 9.5;
+      const fuel = document.getElementById('fuelType').value;
+
+      const boostPsi = boostBar * 14.5038;
+      const pr = (14.7 + boostPsi) / 14.7;
+      // Volumetric calculation
+      const cid = disp * 61.0237;
+      const ve = 0.92;
+      const intakeTempR = (42 + 273.15) * 1.8;
+      const mapPsia = 14.7 + boostPsi;
+      const mafLbMin = (mapPsia * cid * rpm * ve) / (1728 * 2 * 0.3704 * intakeTempR);
+      const mafKgh = mafLbMin * 27.2155;
+
+      const hpPerLbMin = fuel === 'ethanol' ? 10.35 : 9.6;
+      const estHp = mafLbMin * hpPerLbMin;
+      const estWhp = estHp * 0.85;
+
+      const bsfc = fuel === 'ethanol' ? 0.64 : 0.47;
+      const maxIdc = 0.80;
+      const injLbHr = (estHp * bsfc) / (cyl * maxIdc);
+      const injCcMin = injLbHr * 10.5;
+      const totalFuelLph = (injCcMin * cyl * maxIdc * 60) / 1000;
+      const dynCr = cr * pr;
+
+      document.getElementById('outHp').textContent = Math.round(estHp) + ' cv';
+      document.getElementById('outWhp').textContent = `~${Math.round(estWhp)} whp (Roda)`;
+      document.getElementById('outMaf').textContent = mafLbMin.toFixed(1) + ' lb/min';
+      document.getElementById('outKgh').textContent = Math.round(mafKgh).toLocaleString('pt-BR') + ' kg/h';
+      document.getElementById('outPr').textContent = pr.toFixed(2) + ' : 1';
+      document.getElementById('outPsi').textContent = boostPsi.toFixed(1) + ' PSI Boost';
+      document.getElementById('outInjCc').textContent = Math.ceil(injCcMin / 10) * 10 + ' cc/min';
+      document.getElementById('outInjLb').textContent = `~${Math.round(injLbHr)} lb/hr (@ 3 bar)`;
+      document.getElementById('outDynCr').textContent = dynCr.toFixed(1) + ' : 1';
+      document.getElementById('outPump').textContent = Math.ceil(totalFuelLph) + ' L/h';
+
+      const badge = document.getElementById('crWarningBadge');
+      if (fuel === 'gasoline' && dynCr > 19.5) {
+        badge.textContent = 'Risco de Detonação na Gasolina!';
+        badge.className = 'px-2.5 py-1 text-xs font-mono font-bold rounded bg-red-500/20 text-red-400';
+      } else {
+        badge.textContent = fuel === 'ethanol' ? 'Seguro p/ Etanol (E100)' : 'Taxa Segura p/ Gasolina';
+        badge.className = 'px-2.5 py-1 text-xs font-mono font-bold rounded bg-emerald-500/20 text-emerald-400';
+      }
+    }
+
+    function initCharts() {
+      const ctx1 = document.getElementById('boostIdcChart').getContext('2d');
+      boostIdcChart = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: rpms,
+          datasets: [
+            { label: 'Pressão Turbo (bar)', data: scenarios.warning.boost, borderColor: '#38bdf8', yAxisID: 'yBoost', tension: 0.3, borderWidth: 2.5 },
+            { label: 'Duty Cycle Bicos (IDC %)', data: scenarios.warning.idc, borderColor: '#f97316', yAxisID: 'yIdc', tension: 0.3, borderWidth: 2.5 }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 11 } } } },
+          scales: {
+            x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+            yBoost: { type: 'linear', position: 'left', min: 0, max: 2.0, ticks: { color: '#38bdf8' }, grid: { color: '#1e293b' } },
+            yIdc: { type: 'linear', position: 'right', min: 0, max: 105, ticks: { color: '#f97316' }, grid: { drawOnChartArea: false } }
+          }
+        }
+      });
+
+      const ctx2 = document.getElementById('lambdaChart').getContext('2d');
+      lambdaChart = new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: rpms,
+          datasets: [
+            { label: 'Lambda Real (Sonda Wideband)', data: scenarios.warning.lambdaReal, borderColor: '#ef4444', tension: 0.3, borderWidth: 2.5 },
+            { label: 'Lambda Alvo (Mapa ECU)', data: scenarios.warning.lambdaTarget, borderColor: '#10b981', borderDash: [5, 5], tension: 0.3, borderWidth: 2 }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 11 } } } },
+          scales: {
+            x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+            y: { min: 0.70, max: 1.00, ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } }
+          }
+        }
+      });
+
+      renderAlerts('warning');
+    }
+
+    function renderAlerts(key) {
+      const container = document.getElementById('auditAlerts');
+      container.innerHTML = scenarios[key].alerts.map(a => {
+        const cls = a.type === 'crit' ? 'text-red-400 bg-red-950/40 border-red-800/60' :
+                    (a.type === 'warn' ? 'text-amber-400 bg-amber-950/40 border-amber-800/60' : 'text-emerald-400 bg-emerald-950/40 border-emerald-800/60');
+        return `<div class="p-2.5 rounded border ${cls}">${a.msg}</div>`;
+      }).join('');
+    }
+
+    function loadDatalogScenario(key) {
+      document.getElementById('btnLogWarn').className = key === 'warning'
+        ? 'px-3 py-1.5 text-xs font-semibold rounded bg-orange-600 text-white'
+        : 'px-3 py-1.5 text-xs font-semibold rounded bg-slate-800 text-slate-300 hover:bg-slate-700';
+      document.getElementById('btnLogSafe').className = key === 'safe'
+        ? 'px-3 py-1.5 text-xs font-semibold rounded bg-emerald-600 text-white'
+        : 'px-3 py-1.5 text-xs font-semibold rounded bg-slate-800 text-slate-300 hover:bg-slate-700';
+
+      boostIdcChart.data.datasets[0].data = scenarios[key].boost;
+      boostIdcChart.data.datasets[1].data = scenarios[key].idc;
+      lambdaChart.data.datasets[0].data = scenarios[key].lambdaReal;
+      lambdaChart.data.datasets[1].data = scenarios[key].lambdaTarget;
+      boostIdcChart.update();
+      lambdaChart.update();
+      renderAlerts(key);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      calcTurbo();
+      initCharts();
+    });
+  </script>
+</body>
+</html>
